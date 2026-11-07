@@ -31,9 +31,9 @@ Open the notebook in Jupyter or Google Colab and follow its cells in order. The 
 
 ## Results and validation
 
-The saved notebook output reports **100% accuracy** and precision/recall/F1 of 1.00 on a 2,000-row test set. This is a notebook-reported result, not an independently reproduced benchmark. Before interpreting it as model quality, document the dataset source and split procedure, check for duplicate or overlapping messages, fit preprocessing on training data only, and evaluate against a fresh held-out dataset.
+The notebook generates a **synthetic 10,000-row dataset** by repeatedly sampling from only 10 spam phrase templates and 10 ham phrase templates (5,000 rows per class). The saved notebook reports **100% accuracy** and precision/recall/F1 of 1.00 on a 2,000-row random test split. Because identical template messages can appear in both training and test splits, this result is vulnerable to duplicate/template leakage and measures recognition of this small synthetic phrase set—not generalisation to real email. It has not been independently rerun during this audit.
 
-For a spam filter, accuracy alone is insufficient: report per-class precision, recall, F1, confusion matrix, false-positive rate for legitimate messages, and false-negative rate for spam.
+Do not present 100% as a general spam-detection accuracy claim. For a defensible evaluation, use a documented real-world or appropriately licensed benchmark, deduplicate before splitting, use a stratified held-out test set (preferably also a time-based split), and report per-class precision, recall, F1, confusion matrix, false-positive rate for legitimate messages, and false-negative rate for spam.
 
 ## Limitations and privacy
 
