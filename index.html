@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>MailGuard — Spam Email Classifier</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="#" class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </span>
+        <span>MailGuard</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#classifier">Classifier</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#model-details">Model Details</a>
+        <a href="https://github.com/777tharun7/Spam_EMail_Classifier" target="_blank" rel="noopener noreferrer" class="nav-cta">
+          GitHub Repo
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <div class="hero-pill">
+        <span class="dot" aria-hidden="true"></span>
+        Live Client-Side ML · TF-IDF + Multinomial Naive Bayes
+      </div>
+      <h1>Instant Spam Email Classification</h1>
+      <p class="hero-subtitle">
+        Paste any email subject or message body to analyze whether it is <strong>Spam</strong> or <strong>Ham (Legitimate)</strong>, with word-level signal breakdown running directly in your browser.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="classifier" class="workspace">
+      <!-- Left: Input Panel -->
+      <div class="card input-card">
+        <div class="card-header">
+          <h2>Email Inspector</h2>
+          <div class="quick-actions">
+            <button type="button" id="btn-sample-spam" class="btn-ghost-danger">Try Spam Sample</button>
+            <button type="button" id="btn-sample-ham" class="btn-ghost-success">Try Ham Sample</button>
+          </div>
+        </div>
+
+        <form id="classifier-form" novalidate>
+          <div class="field">
+            <label for="subject-input">Subject <span class="optional">(optional)</span></label>
+            <input
+              type="text"
+              id="subject-input"
+              name="subject"
+              placeholder="e.g., Final notice! Your subscription will expire soon"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="message-input">Email Body</label>
+              <span id="char-count" class="char-count">0 words · 0 chars</span>
+            </div>
+            <textarea
+              id="message-input"
+              name="message"
+              placeholder="Paste the email content here to classify..."
+              required
+            ></textarea>
+          </div>
+
+          <p id="error-msg" class="error-msg" role="alert"></p>
+
+          <div class="form-actions">
+            <button type="submit" id="submit-btn" class="btn-primary">
+              Analyze Email
+            </button>
+            <button type="button" id="clear-btn" class="btn-secondary">
+              Clear
+            </button>
+          </div>
+        </form>
+
+        <div class="presets">
+          <p class="presets-label">Quick test messages</p>
+          <div id="examples-container" class="chips"></div>
+        </div>
+      </div>
+
+      <!-- Right: Results Panel -->
+      <div class="results-column">
+        <div class="card result-card" aria-live="polite">
+          <div id="empty-state" class="empty-state">
+            <div class="empty-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+            </div>
+            <h3>Ready to Analyze</h3>
+            <p>Enter an email message on the left or pick a sample to see its classification verdict, confidence score, and keyword signals.</p>
+          </div>
+
+          <div id="result-content" class="result-content hidden">
+            <div id="verdict-banner" class="verdict-banner">
+              <div>
+                <span class="verdict-kicker">Classification Verdict</span>
+                <div id="verdict-title" class="verdict-title"></div>
+              </div>
+              <div id="confidence-badge" class="confidence-badge"></div>
+            </div>
+
+            <div class="prob-section">
+              <div class="prob-row">
+                <div class="prob-labels">
+                  <span>Spam Probability</span>
+                  <strong id="spam-pct">0%</strong>
+                </div>
+                <div class="bar-track">
+                  <div id="spam-bar" class="bar-fill bar-spam"></div>
+                </div>
+              </div>
+
+              <div class="prob-row">
+                <div class="prob-labels">
+                  <span>Ham (Legitimate) Probability</span>
+                  <strong id="ham-pct">0%</strong>
+                </div>
+                <div class="bar-track">
+                  <div id="ham-bar" class="bar-fill bar-ham"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="signals-section">
+              <h4>Keyword Signal Breakdown</h4>
+              <p class="signals-hint">Tokens from your message found in the model's 94-word vocabulary:</p>
+              <div id="token-list" class="token-list"></div>
+            </div>
+
+            <div class="cleaned-preview">
+              <span class="cleaned-label">Normalized text:</span>
+              <code id="cleaned-text"></code>
+            </div>
+          </div>
+        </div>
+
+        <div class="card history-card">
+          <div class="card-header">
+            <h3>Recent Scans</h3>
+            <button type="button" id="clear-history-btn" class="btn-text hidden">Clear</button>
+          </div>
+          <div id="history-list" class="history-list">
+            <p class="history-empty">No scans yet in this session.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="info-section">
+      <div class="section-head">
+        <h2>How It Works</h2>
+        <p>Every message goes through the exact three-stage pipeline from the notebook, running locally in JavaScript.</p>
+      </div>
+      <div class="grid-3">
+        <article class="card info-card">
+          <span class="step-num">01</span>
+          <h3>Text Normalization</h3>
+          <p>Converts text to lowercase, strips numeric digits and punctuation, and collapses extra whitespace.</p>
+        </article>
+        <article class="card info-card">
+          <span class="step-num">02</span>
+          <h3>TF-IDF Vectorization</h3>
+          <p>Filters English stop words and weights each recognized term by its Inverse Document Frequency (IDF) with L2 normalization.</p>
+        </article>
+        <article class="card info-card">
+          <span class="step-num">03</span>
+          <h3>Multinomial Naive Bayes</h3>
+          <p>Combines class log-priors and per-token log-probabilities to compute calibrated Spam vs. Ham confidence scores.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="model-details" class="info-section">
+      <div class="card details-card">
+        <div class="details-grid">
+          <div>
+            <h2>Model &amp; Dataset Details</h2>
+            <p>
+              Trained with <code>TfidfVectorizer(stop_words="english")</code> and <code>MultinomialNB()</code> on a 10,000-row balanced synthetic dataset (5,000 Spam, 5,000 Ham) generated from 20 template phrases.
+            </p>
+            <p class="note">
+              <strong>Note:</strong> Because the model was trained on a small synthetic phrase set (94 vocabulary tokens), messages containing words outside that vocabulary rely on the prior distribution.
+            </p>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-value">94</span>
+              <span class="stat-label">Vocabulary Tokens</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-value">10,000</span>
+              <span class="stat-label">Training Samples</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-value">MultinomialNB</span>
+              <span class="stat-label">Classifier</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-value">100%</span>
+              <span class="stat-label">Browser Inference</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>MailGuard · Spam Email Classifier</span>
+      <a href="https://github.com/777tharun7/Spam_EMail_Classifier" target="_blank" rel="noopener noreferrer">
+        View Source on GitHub
+      </a>
+    </div>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>
